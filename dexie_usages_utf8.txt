@@ -1,0 +1,136 @@
+﻿
+script.js:2:db.version(16).stores({
+script.js:34:    const invCount = await db.inventory.count();
+script.js:63:        const saved = await db.settings.get('journalHandle');
+script.js:90:    const count = await db.users.count();
+script.js:92:        await db.users.add({
+script.js:105:    const active = await db.sessions
+script.js:128:    await db.inventory.bulkAdd([
+script.js:137:    await db.services.bulkAdd([
+script.js:196:    inventory = await db.inventory.toArray();
+script.js:197:    services = await db.services.toArray();
+script.js:412:        await db.settings.put({ key: 'journalHandle', value: journalFolderHandle });
+script.js:422:    await db.journal.add({ timestamp: Date.now(), content: text });
+script.js:510:        await db.sessions.update(currentSession.id, { invoiceCounter: shiftInvNo });
+script.js:537:        const saleId = await db.sales.add(sale);
+script.js:542:                const p = await db.inventory.get(item.id);
+script.js:543:                await db.inventory.update(item.id, { stock: p.stock - item.qty });
+script.js:547:                    await db.sales.update(saleId, { isPaid: true });
+script.js:554:        const existingCustomer = await db.customers.where('phone').equals(cPhone).first();
+script.js:558:            await db.customers.update(existingCustomer.id, {
+script.js:564:            await db.customers.add({
+script.js:654:    if (id) await db.inventory.update(parseInt(id), data);
+script.js:655:    else await db.inventory.add(data);
+script.js:673:    await db.services.add(data);
+script.js:684:        await db.inventory.delete(id);
+script.js:693:        await db.services.delete(id);
+script.js:701:    const item = await db.inventory.get(id);
+script.js:715:    const allExpenses = await db.expenses.toArray();
+script.js:793:        await db.expenses.add(expense);
+script.js:806:        await db.expenses.delete(id);
+script.js:814:    const allSales = await db.sales.toArray();
+script.js:826:    const allExpenses = await db.expenses.toArray();
+script.js:929:    const allSales = await db.sales.toArray();
+script.js:930:    const allCustomers = await db.customers.toArray();
+script.js:1033:        const existing = await db.customers.where('phone').equals(phone).first();
+script.js:1035:            await db.customers.update(existing.id, customer);
+script.js:1038:            await db.customers.add(customer);
+script.js:1052:    await db.sales.update(id, { isPaid: true });
+script.js:1127:    const history = await db.sales.where('vehicleNo').equals(query).toArray();
+script.js:1209:    const sale = await db.sales.get(id);
+script.js:1276:    const sale = await db.sales.get(id);
+script.js:1358:        const inventory = await db.inventory.toArray();
+script.js:1359:        const sales = await db.sales.toArray();
+script.js:1360:        const services = await db.services.toArray();
+script.js:1361:        const grns = await db.grns.toArray();
+script.js:1430:                await db.inventory.clear();
+script.js:1431:                await db.sales.clear();
+script.js:1432:                await db.services.clear();
+script.js:1434:                if (data.inventory) await db.inventory.bulkAdd(data.inventory);
+script.js:1435:                if (data.sales) await db.sales.bulkAdd(data.sales);
+script.js:1436:                if (data.services) await db.services.bulkAdd(data.services);
+script.js:1462:        await db.transaction('rw', db.inventory, db.sales, db.services, db.customers, db.sessions, 
+db.dailyReports, async () => {
+script.js:1463:            await db.inventory.clear();
+script.js:1464:            await db.sales.clear();
+script.js:1465:            await db.services.clear();
+script.js:1466:            await db.customers.clear();
+script.js:1467:            await db.sessions.clear();
+script.js:1468:            await db.dailyReports.clear();
+script.js:1489:    const allSales = await db.sales.where('vehicleNo').equals(vNo).toArray();
+script.js:1528:        const customer = await db.customers.where('phone').equals(phone).first();
+script.js:1573:    const allSales = await db.sales.where('vehicleNo').equals(vNo).toArray();
+script.js:1610:    const id = await db.sessions.add(session);
+script.js:1649:    const allExpArr = await db.expenses.toArray();
+script.js:1659:        const sessionSales = await db.sales.where('sessionId').equals(session.id).toArray();
+script.js:1721:        await db.sessions.update(currentSession.id, { floatCash: newFloat });
+script.js:1737:    await db.transaction('rw', db.sessions, async () => {
+script.js:1748:                await db.sessions.update(session.id, {
+script.js:1795:    const emailRes = await db.settings.get('emailSettings');
+script.js:2057:        expenses = await db.expenses.where('timestamp').between(startTs, endTs, true, true).toArray();
+script.js:2062:        expenses = await db.expenses.where('timestamp').above(startOfMonth).toArray();
+script.js:2124:    const grns = await db.grns.where('timestamp').between(startTs, endTs, true, true).toArray();
+script.js:2180:    const sales = await db.sales.where('timestamp').between(startOfDay.getTime(), endOfDay.getTime(), 
+true, true).toArray();
+script.js:2183:    const expenses = await db.expenses.where('timestamp').between(startOfDay.getTime(), 
+endOfDay.getTime(), true, true).toArray();
+script.js:2255:    const sales = await db.sales.where('timestamp').above(start).toArray();
+script.js:2303:    const sales = await db.sales.where('timestamp').above(start).toArray();
+script.js:2340:    const sales = await db.sales.toArray();
+script.js:2381:    const customer = await db.customers.where('phone').equals(phone).first();
+script.js:2390:        const sales = await db.sales.where('customerPhone').equals(phone).toArray();
+script.js:2431:    const sales = await db.sales.toArray();
+script.js:2480:    const items = await db.inventory.toArray();
+script.js:2522:    const customers = await db.customers.toArray();
+script.js:2546:    const existing = await db.customers.where('phone').equals(data.phone).first();
+script.js:2548:        await db.customers.update(existing.id, {
+script.js:2553:        await db.customers.add(data);
+script.js:2558:    const sale = saleData || await db.sales.get(saleId);
+script.js:2658:        const sale = await db.sales.get(saleId);
+script.js:2839:        const saved = await db.settings.get('journalHandle');
+script.js:2858:        const saved = await db.settings.get('journalHandle');
+script.js:2878:    const user = await db.users.where('username').equals(u).first();
+script.js:2927:    const userList = await db.users.toArray();
+script.js:2955:        await db.users.add({ username, password, role });
+script.js:2966:        await db.users.delete(id);
+script.js:2977:        db.users.update(currentUser.id, { password: newPass }).then(() => {
+script.js:2990:    const items = await db.inventory.toArray();
+script.js:2991:    const sales = await db.sales.toArray();
+script.js:3073:    const list = await db.grns.reverse().toArray();
+script.js:3141:    const part = await db.inventory.get(parseInt(itemId));
+script.js:3245:        const id = await db.grns.add(grnData);
+script.js:3249:            const p = await db.inventory.get(item.id);
+script.js:3251:                await db.inventory.update(item.id, {
+script.js:3283:    const grn = await db.grns.get(id);
+script.js:3379:    const grn = await db.grns.get(id);
+script.js:3442:            await db.grns.delete(id);
+script.js:3546:    await db.settings.put({ key: 'emailSettings', value: emailSettings });
+script.js:3565:        const result = await db.settings.get('emailSettings');
+script.js:3619:        const result = await db.settings.get('emailSettings');
+script.js:3658:    const allSales = await db.sales.toArray();
+script.js:3775:    const vehicles = await db.vehicles.toArray();
+script.js:3832:    const vehicle = await db.vehicles.where('vehicleNo').equals(vNo).first();
+script.js:3871:        await db.vehicles.update(Number(id), data);
+script.js:3874:        await db.vehicles.add(data);
+script.js:3887:    let vehicle = await db.vehicles.where('vehicleNo').equals(vNo).first();
+script.js:3891:        const id = await db.vehicles.add({
+script.js:3897:        vehicle = await db.vehicles.get(id);
+script.js:3907:    await db.vehicles.update(vehicle.id, { images: currentImages });
+script.js:3928:    const vehicle = await db.vehicles.where('vehicleNo').equals(vNo).first();
+script.js:3931:    await db.vehicles.update(vehicle.id, { images });
+script.js:3972:    const item = await db.inventory.where('partNumber').equals(code).first();
+script.js:4014:    const suppliers = await db.suppliers.toArray();
+script.js:4015:    const grns = await db.grns.toArray();
+script.js:4101:            await db.suppliers.update(Number(id), { name, phone, address });
+script.js:4104:            await db.suppliers.add({ name, phone, address });
+script.js:4117:    const s = await db.suppliers.get(id);
+script.js:4128:    await db.suppliers.delete(id);
+script.js:4147:    const sGrns = await db.grns.where('supplierId').equals(id).toArray();
+script.js:4155:            await db.grns.update(g.id, { paidAmount: (g.paidAmount || 0) + payment });
+script.js:4166:    const s = await db.suppliers.get(id);
+script.js:4167:    const sGrns = await db.grns.where('supplierId').equals(id).toArray();
+script.js:4209:    const suppliers = await db.suppliers.toArray();
+script.js:4237:    const sales = await db.sales.where('timestamp').above(startTime).toArray();
+script.js:4238:    const inventory = await db.inventory.toArray();
+
+

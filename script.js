@@ -235,7 +235,7 @@ function renderItems() {
     }
 
     container.innerHTML = filtered.map(item => `
-        <div class="glass p-2 rounded-lg border border-slate-700/50 card-hover flex flex-col justify-between h-auto gap-0.5 min-h-[80px]">
+        <div class="glass p-2 rounded-lg border border-slate-700/50 card-hover flex flex-col justify-between h-auto gap-0.5 min-h-[80px]" data-item-id="${item.id}">
             <div>
                 <div class="flex justify-between items-start mb-0.5">
                     <span class="text-[7px] font-bold uppercase tracking-wider text-slate-500 truncate">${item.category}</span>
@@ -248,7 +248,7 @@ function renderItems() {
                 <span class="text-[8px] ${item.stock <= 5 ? 'text-red-400 font-bold' : 'text-slate-400'}">
                     ${item.stock} in stock
                 </span>
-                <button onclick="addToCart('item', ${item.id})" 
+                <button onclick="addToCart('item', '${item.id}')" 
                     class="bg-slate-700 hover:bg-primary hover:text-dark p-1 rounded-md transition-all h-6 w-6 flex items-center justify-center"
                     ${item.stock <= 0 ? 'disabled' : ''}>
                     <i data-lucide="plus" class="w-3 h-3"></i>
@@ -262,7 +262,7 @@ function renderItems() {
 function renderQuickServices() {
     const container = document.getElementById('service-list-quick');
     container.innerHTML = services.map(s => `
-        <button onclick="addToCart('service', ${s.id})" 
+        <button onclick="addToCart('service', '${s.id}')" 
             class="w-full text-left px-3 py-1.5 rounded-lg text-[10px] text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/30 transition-all flex justify-between items-center group">
             <span>${s.serviceName}</span>
             <i data-lucide="plus" class="w-3 h-3 opacity-0 group-hover:opacity-100"></i>
@@ -274,10 +274,10 @@ function renderQuickServices() {
 // Cart Logic
 function addToCart(type, id) {
     if (type === 'item') {
-        const product = inventory.find(i => i.id === id);
+        const product = inventory.find(i => String(i.id) === String(id));
         if (!product || product.stock <= 0) return;
 
-        const existing = cart.find(c => c.type === 'item' && c.id === id);
+        const existing = cart.find(c => c.type === 'item' && String(c.id) === String(id));
         if (existing) {
             if (existing.qty < product.stock) existing.qty++;
             else showToast("Maximum stock reached", "error");
@@ -285,8 +285,9 @@ function addToCart(type, id) {
             cart.push({ ...product, type: 'item', qty: 1 });
         }
     } else {
-        const service = services.find(s => s.id === id);
-        cart.push({ id: Date.now(), serviceId: id, partName: service.serviceName, price: service.cost, type: 'service', qty: 1 });
+        const service = services.find(s => String(s.id) === String(id));
+        if (!service) return;
+        cart.push({ id: Date.now(), serviceId: service.id, partName: service.serviceName, price: service.cost, type: 'service', qty: 1 });
     }
     updateCartUI();
 }
@@ -626,8 +627,8 @@ function renderInventoryTable() {
             <td class="px-4 py-2.5 text-right font-black text-primary text-xs">${item.price.toLocaleString()}</td>
             <td class="px-4 py-2.5 text-center">
                 <div class="flex justify-center gap-1.5">
-                    <button onclick="editItem(${item.id})" class="p-1 hover:bg-blue-500/20 text-blue-400 rounded transition-colors"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
-                    <button onclick="deleteItem(${item.id})" class="p-1 hover:bg-red-500/20 text-red-400 rounded transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="editItem('${item.id}')" class="p-1 hover:bg-blue-500/20 text-blue-400 rounded transition-colors"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="deleteItem('${item.id}')" class="p-1 hover:bg-red-500/20 text-red-400 rounded transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                 </div>
             </td>
         </tr>
@@ -640,23 +641,37 @@ function renderInventoryTable() {
             <td class="px-6 py-3 font-semibold">${s.serviceName}</td>
             <td class="px-6 py-3 text-right font-bold text-blue-400">${s.cost.toLocaleString()}</td>
             <td class="px-6 py-3 text-center">
-                <button onclick="deleteService(${s.id})" class="text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                <button onclick="deleteService('${s.id}')" class="text-red-400 hover:text-red-300"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
             </td>
         </tr>
     `).join('');
     lucide.createIcons();
 }
 
+function showAddItemModal() {
+    document.getElementById('item-id').value = '';
+    document.getElementById('item-form').reset();
+    document.getElementById('input-stock').value = 0;
+    showModal('item-modal');
+}
+
 async function handleItemSubmit(e) {
     e.preventDefault();
     const id = document.getElementById('item-id').value;
+
+    let currentStock = 0;
+    if (id) {
+        const existingItem = await db.inventory.get(id);
+        currentStock = existingItem ? (existingItem.stock || 0) : 0;
+    }
+
     const data = {
         partName: document.getElementById('input-part-name').value,
         partNumber: document.getElementById('input-part-no').value,
         category: document.getElementById('input-category').value,
-        stock: parseInt(document.getElementById('input-stock').value),
-        buyingPrice: parseFloat(document.getElementById('input-buying-price').value),
-        price: parseFloat(document.getElementById('input-price').value)
+        stock: currentStock, // Stock increases strictly via GRN
+        buyingPrice: parseFloat(document.getElementById('input-buying-price').value) || 0,
+        price: parseFloat(document.getElementById('input-price').value) || 0
     };
 
     if (id) await db.inventory.update(id, data);
@@ -668,7 +683,7 @@ async function handleItemSubmit(e) {
     await refreshData();
     renderInventoryTable();
     renderItems();
-    showToast("Inventory updated!", "success");
+    showToast(id ? "Inventory item updated!" : "New product added! Add stock via GRN.", "success");
 }
 
 async function handleServiceSubmit(e) {
@@ -765,7 +780,7 @@ async function renderExpenses() {
             <td class="px-6 py-4 font-medium text-slate-200">${e.description}</td>
             <td class="px-6 py-4 text-right font-black text-amber-500">Rs ${e.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
             <td class="px-6 py-4 text-center">
-                <button onclick="deleteExpense(${e.id})" class="text-slate-500 hover:text-red-500 transition-colors">
+                <button onclick="deleteExpense('${e.id}')" class="text-slate-500 hover:text-red-500 transition-colors">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </td>
@@ -3098,13 +3113,13 @@ async function renderGrnTable() {
             <td class="px-6 py-4 text-right font-black">Rs ${g.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
             <td class="px-6 py-4 text-center">
                 <div class="flex justify-center gap-2">
-                    <button onclick="viewGRN(${g.id})" class="p-2 bg-slate-800 text-green-400 hover:text-green-300 rounded-lg transition-all" title="View Details">
+                    <button onclick="viewGRN('${g.id}')" class="p-2 bg-slate-800 text-green-400 hover:text-green-300 rounded-lg transition-all" title="View Details">
                         <i data-lucide="eye" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="generateGrnPdf(${g.id})" class="p-2 bg-slate-800 text-blue-400 hover:text-blue-300 rounded-lg transition-all" title="Download Report">
+                    <button onclick="generateGrnPdf('${g.id}')" class="p-2 bg-slate-800 text-blue-400 hover:text-blue-300 rounded-lg transition-all" title="Download Report">
                         <i data-lucide="file-text" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="deleteGRN(${g.id})" class="p-2 bg-slate-800 text-red-500 hover:text-red-400 rounded-lg transition-all" title="Delete GRN">
+                    <button onclick="deleteGRN('${g.id}')" class="p-2 bg-slate-800 text-red-500 hover:text-red-400 rounded-lg transition-all" title="Delete GRN">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -3132,7 +3147,7 @@ function filterGrnItems(query) {
         resultsContainer.innerHTML = '<div class="p-3 text-xs text-slate-500 italic">No items found</div>';
     } else {
         resultsContainer.innerHTML = filtered.map(item => `
-            <div onclick="selectGrnItem(${item.id}, '${item.partName.replace(/'/g, "\\'")}')" 
+            <div onclick="selectGrnItem('${item.id}', '${item.partName.replace(/'/g, "\\'")}')" 
                 class="p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-700/50 last:border-0 transition-colors">
                 <p class="text-sm font-bold text-slate-100">${item.partName}</p>
                 <p class="text-[10px] text-slate-400 font-mono">${item.partNumber} | Current Stock: ${item.stock}</p>
@@ -3170,8 +3185,10 @@ function addGrnItem() {
     if (!itemId) return showToast("Please select an item from the list", "error");
     if (qty <= 0) return showToast("Quantity must be greater than 0", "error");
 
-    const part = inventory.find(i => i.id == itemId);
-    const existing = grnCart.find(c => c.id == itemId);
+    const part = inventory.find(i => String(i.id) === String(itemId));
+    if (!part) return showToast("Selected item not found", "error");
+
+    const existing = grnCart.find(c => String(c.id) === String(itemId));
 
     if (existing) {
         existing.qty += qty;
@@ -4084,20 +4101,20 @@ async function renderSuppliers() {
             </td>
             <td class="px-6 py-4">
                 <div class="flex items-center justify-center gap-2">
-                    <button onclick="openSupplierLedger(${s.id})" title="View Ledger"
+                    <button onclick="openSupplierLedger('${s.id}')" title="View Ledger"
                         class="p-2 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
                         <i data-lucide="book-open" class="w-4 h-4"></i>
                     </button>
                     ${s.outstanding > 0 ? `
-                    <button onclick="openPaySupplierModal(${s.id}, \`${s.name.replace(/'/g, "\\'")}\`, ${s.outstanding})" title="Pay Supplier"
+                    <button onclick="openPaySupplierModal('${s.id}', \`${s.name.replace(/'/g, "\\'")}\`, ${s.outstanding})" title="Pay Supplier"
                         class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg hover:bg-emerald-500 hover:text-white transition-all">
                         <i data-lucide="wallet" class="w-4 h-4"></i>
                     </button>` : ''}
-                    <button onclick="editSupplier(${s.id})" title="Edit Info"
+                    <button onclick="editSupplier('${s.id}')" title="Edit Info"
                         class="p-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-600 transition-all">
                         <i data-lucide="edit-3" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="deleteSupplier(${s.id})" title="Delete Supplier"
+                    <button onclick="deleteSupplier('${s.id}')" title="Delete Supplier"
                         class="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>

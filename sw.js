@@ -13,9 +13,15 @@ const ASSETS = [
 // Install Event - Caching Assets
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
+        caches.open(CACHE_NAME).then(async cache => {
             console.log('Caching assets...');
-            return cache.addAll(ASSETS);
+            for (const asset of ASSETS) {
+                try {
+                    await cache.add(asset);
+                } catch (e) {
+                    console.warn('Failed to cache asset:', asset, e);
+                }
+            }
         })
     );
 });

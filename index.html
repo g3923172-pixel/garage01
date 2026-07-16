@@ -33,6 +33,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- PWA & Mobile Meta Tags -->
     <meta name="theme-color" content="#f59e0b">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
@@ -43,7 +44,7 @@
 
     <!-- Register Service Worker -->
     <script>
-        if ('serviceWorker' in navigator) {
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then(reg => console.log('Service Worker registered!'))
@@ -391,7 +392,7 @@
                             <p class="text-slate-400">Manage your spare parts and service rates</p>
                         </div>
                         <div class="flex gap-3">
-                            <button onclick="showModal('item-modal')"
+                            <button onclick="showAddItemModal()"
                                 class="flex items-center gap-2 bg-primary text-dark px-4 py-2 rounded-lg font-bold hover:scale-105 transition-transform">
                                 <i data-lucide="plus-circle" class="w-5 h-5"></i> Add Part
                             </button>
@@ -1360,9 +1361,11 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label class="text-sm font-medium text-slate-400">Quantity in Stock</label>
-                        <input type="number" id="input-stock" required min="0"
-                            class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 focus:border-primary outline-none">
+                        <label class="text-sm font-medium text-slate-400">Stock Qty (GRN Only)</label>
+                        <input type="number" id="input-stock" value="0" readonly disabled
+                            class="w-full bg-slate-900 border border-slate-700/60 text-slate-500 cursor-not-allowed rounded-lg p-2.5 outline-none font-bold"
+                            title="Stock can only be added via GRN">
+                        <p class="text-[9px] text-slate-500 italic">Stock increases only via GRN</p>
                     </div>
                     <div class="space-y-1">
                         <label class="text-sm font-medium text-slate-400">Buying Price (Rs)</label>

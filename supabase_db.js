@@ -25,44 +25,130 @@ class DexieQueryBuilder {
         this.tableName = tableName;
         this.key = key;
         this.isReverse = isReverse;
+        this.filters = [];
         this._buildQuery();
     }
+
     _buildQuery() {
         this.query = getSupabase().from(this.tableName).select('*');
         if (this.isReverse) {
             this.query = this.query.order(this.key || 'id', { ascending: false });
         }
     }
+
     equals(val) {
-        this.query = this.query.eq(this.key, val);
+        if (this.key) {
+            this.query = this.query.eq(this.key, val);
+        }
         return this;
     }
+
     above(val) {
-        this.query = this.query.gt(this.key, val);
+        if (this.key) {
+            this.query = this.query.gt(this.key, val);
+        }
         return this;
     }
+
+    below(val) {
+        if (this.key) {
+            this.query = this.query.lt(this.key, val);
+        }
+        return this;
+    }
+
     between(start, end, includeStart = true, includeEnd = true) {
-        if (includeStart) this.query = this.query.gte(this.key, start);
-        else this.query = this.query.gt(this.key, start);
-        
-        if (includeEnd) this.query = this.query.lte(this.key, end);
-        else this.query = this.query.lt(this.key, end);
+        if (this.key) {
+            if (includeStart) this.query = this.query.gte(this.key, start);
+            else this.query = this.query.gt(this.key, start);
+            
+            if (includeEnd) this.query = this.query.lte(this.key, end);
+            else this.query = this.query.lt(this.key, end);
+        }
         return this;
     }
+
     startsWithIgnoreCase(val) {
-        this.query = this.query.ilike(this.key, `${val}%`);
+        if (this.key) {
+            this.query = this.query.ilike(this.key, `${val}%`);
+        }
         return this;
     }
-    async toArray() {
+
+    and(fn) {
+        if (typeof fn === 'function') {
+            this.filters.push(fn);
+        }
+        return this;
+    }
+
+    filter(fn) {
+        return this.and(fn);
+    }
+
+    or(key) {
+        return this;
+    }
+
+    async _exec() {
         const { data, error } = await this.query;
-        if (error) { console.error('Supabase error (toArray):', error); return []; }
-        return data || [];
+        if (error) { console.error(`Supabase query error (${this.tableName}):`, error); return []; }
+        let list = data || [];
+        if (this.tableName === 'settings') {
+            list = list.map(item => {
+                if (item && item.value_json) {
+                    try { item.value = JSON.parse(item.value_json); } catch(e){}
+                }
+                return item;
+            });
+        }
+        if (this.filters.length > 0) {
+            list = list.filter(item => {
+                return this.filters.every(fn => {
+                    try { return fn(item); } catch(e) { return false; }
+                });
+            });
+        }
+        return list;
     }
+
+    async toArray() {
+        return await this._exec();
+    }
+
     async first() {
-        const { data, error } = await this.query.limit(1).maybeSingle();
-        if (error) { console.error('Supabase error (first):', error); return undefined; }
-        return data || undefined;
+        const list = await this._exec();
+        return list[0] || undefined;
     }
+
+    async count() {
+        const list = await this._exec();
+        return list.length;
+    }
+
+    async modify(changesOrFn) {
+        const list = await this._exec();
+        const pk = this.tableName === 'settings' ? 'key' : 'id';
+        for (let item of list) {
+            if (typeof changesOrFn === 'function') {
+                changesOrFn(item);
+                await getSupabase().from(this.tableName).update(item).eq(pk, item[pk]);
+            } else if (typeof changesOrFn === 'object') {
+                await getSupabase().from(this.tableName).update(changesOrFn).eq(pk, item[pk]);
+            }
+        }
+        return list.length;
+    }
+
+    async delete() {
+        const list = await this._exec();
+        const pk = this.tableName === 'settings' ? 'key' : 'id';
+        for (let item of list) {
+            await getSupabase().from(this.tableName).delete().eq(pk, item[pk]);
+        }
+        return list.length;
+    }
+
     reverse() {
         this.isReverse = true;
         this.query = this.query.order(this.key || 'id', { ascending: false });
@@ -186,8 +272,20 @@ class DexieTable {
         if (error) { console.error(`Error bulkPut ${this.tableName}:`, error); throw error; }
     }
     
-    where(key) {
-        return new DexieQueryBuilder(this.tableName, key);
+    filter(fn) {
+        const builder = new DexieQueryBuilder(this.tableName, null);
+        return builder.filter(fn);
+    }
+
+    where(keyOrObj) {
+        if (typeof keyOrObj === 'object' && keyOrObj !== null) {
+            const builder = new DexieQueryBuilder(this.tableName, null);
+            for (let k in keyOrObj) {
+                builder.query = builder.query.eq(k, keyOrObj[k]);
+            }
+            return builder;
+        }
+        return new DexieQueryBuilder(this.tableName, keyOrObj);
     }
     
     orderBy(key) {
